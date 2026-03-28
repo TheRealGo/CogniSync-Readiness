@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0e1117;
+    color: #fafafa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 420px;
+    user-select: none;
+    outline: none;
+  }
+  #start-btn {
+    padding: 16px 48px;
+    font-size: 20px;
+    background: #4b9dff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+  }
+  #start-btn:hover { background: #6bb0ff; }
+  .fixation { font-size: 80px; color: #555; font-weight: 300; }
+  .stimulus {
+    font-size: 72px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    letter-spacing: 12px;
+    color: #fafafa;
+  }
+  .result { font-size: 36px; font-weight: bold; }
+  .correct { color: #00d26a; }
+  .incorrect { color: #ff4b4b; }
+  .label { font-size: 16px; color: #888; margin-top: 12px; }
+  .progress {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 14px;
+    color: #555;
+  }
+  .keys {
+    display: flex;
+    gap: 60px;
+    margin-top: 24px;
+    font-size: 14px;
+    color: #666;
+  }
+  .key-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .key-label {
+    padding: 4px 12px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    color: #aaa;
+  }
+  .complete-title { font-size: 36px; color: #4b9dff; font-weight: bold; }
+</style>
+</head>
+<body tabindex="0">
+
+<div id="progress" class="progress"></div>
+<div id="main"></div>
+<div id="sub" class="label"></div>
+<div id="keys"></div>
+
+<script>
+(function() {
+  function postMsg(type, data) {
+    window.parent.postMessage(
+      Object.assign({isStreamlitMessage: true, type: type}, data), "*"
+    );
+  }
+  var Streamlit = {
+    setComponentReady: function() { postMsg("streamlit:componentReady", {apiVersion: 1}); },
+    setFrameHeight: function(h) { postMsg("streamlit:setFrameHeight", {height: h}); },
+    setComponentValue: function(v) { postMsg("streamlit:setComponentValue", {value: v}); },
+  };
+
+  var STIMULI_MAP = [
+    {stimulus: "\u25c0\u25c0\u25c0\u25c0\u25c0", is_congruent: true,  correct_response: "left"},
+    {stimulus: "\u25b6\u25b6\u25b6\u25b6\u25b6", is_congruent: true,  correct_response: "right"},
+    {stimulus: "\u25b6\u25b6\u25c0\u25b6\u25b6", is_congruent: false, correct_response: "left"},
+    {stimulus: "\u25c0\u25c0\u25b6\u25c0\u25c0", is_congruent: false, correct_response: "right"},
+  ];
+
+  var numTrials = 40;
+  var stimuli = [];
+  var trials = [];
+  var trialIdx = 0;
+  var phase = "init";
+  var stimulusStart = 0;
+  var currentStim = null;
+
+  var main = document.getElementById("main");
+  var sub = document.getElementById("sub");
+  var progress = document.getElementById("progress");
+  var keysDiv = document.getElementById("keys");
+
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  function generateStimuli() {
+    stimuli = [];
+    var half = numTrials / 2;
+    for (var i = 0; i < half; i++) {
+      stimuli.push(STIMULI_MAP[Math.random() < 0.5 ? 0 : 1]);
+    }
+    for (var i = 0; i < numTrials - half; i++) {
+      stimuli.push(STIMULI_MAP[Math.random() < 0.5 ? 2 : 3]);
+    }
+    shuffle(stimuli);
+  }
+
+  function showKeyHints() {
+    keysDiv.innerHTML =
+      '<div class="keys">' +
+        '<div class="key-hint"><span class="key-label">F</span><span>\u25c0 \u5de6</span></div>' +
+        '<div class="key-hint"><span class="key-label">J</span><span>\u25b6 \u53f3</span></div>' +
+      '</div>';
+  }
+
+  function showStart() {
+    phase = "init";
+    main.innerHTML = '<button id="start-btn">\u3053\u3053\u3092\u30af\u30ea\u30c3\u30af\u3057\u3066\u30b9\u30bf\u30fc\u30c8</button>';
+    sub.textContent = "\u771f\u3093\u4e2d\u306e\u77e2\u5370\u306e\u5411\u304d\u3060\u3051\u3092\u5224\u65ad\u3057\u3066\u304f\u3060\u3055\u3044";
+    showKeyHints();
+    document.getElementById("start-btn").addEventListener("click", function() {
+      document.body.focus();
+      generateStimuli();
+      nextTrial();
+    });
+  }
+
+  function nextTrial() {
+    if (trialIdx >= numTrials) { complete(); return; }
+    progress.textContent = (trialIdx + 1) + " / " + numTrials;
+    phase = "fixation";
+    main.innerHTML = '<div class="fixation">+</div>';
+    sub.textContent = "";
+    showKeyHints();
+    setTimeout(showStimulus, 500);
+  }
+
+  function showStimulus() {
+    phase = "stimulus";
+    currentStim = stimuli[trialIdx];
+    stimulusStart = performance.now();
+    main.innerHTML = '<div class="stimulus">' + currentStim.stimulus + '</div>';
+    sub.textContent = "";
+  }
+
+  function respond(userDir) {
+    if (phase !== "stimulus") return;
+    var rt = performance.now() - stimulusStart;
+    var isCorrect = userDir === currentStim.correct_response;
+
+    trials.push({
+      trial_number: trialIdx + 1,
+      is_congruent: currentStim.is_congruent,
+      stimulus: currentStim.stimulus,
+      correct_response: currentStim.correct_response,
+      user_response: userDir,
+      is_correct: isCorrect,
+      reaction_time_ms: Math.round(rt * 10) / 10,
+    });
+
+    phase = "feedback";
+    if (isCorrect) {
+      main.innerHTML = '<div class="result correct">\u25cb ' + Math.round(rt) + ' ms</div>';
+    } else {
+      main.innerHTML = '<div class="result incorrect">\u00d7 \u4e0d\u6b63\u89e3</div>';
+    }
+    sub.textContent = "";
+    trialIdx++;
+    setTimeout(nextTrial, 600);
+  }
+
+  function complete() {
+    phase = "complete";
+    main.innerHTML = '<div class="complete-title">\u30c6\u30b9\u30c8\u5b8c\u4e86</div>';
+    sub.textContent = "\u7d50\u679c\u3092\u51e6\u7406\u4e2d\u2026";
+    keysDiv.innerHTML = "";
+    Streamlit.setComponentValue(trials);
+  }
+
+  document.addEventListener("keydown", function(e) {
+    if (e.code === "KeyF") { e.preventDefault(); respond("left"); }
+    if (e.code === "KeyJ") { e.preventDefault(); respond("right"); }
+  });
+
+  window.addEventListener("message", function(event) {
+    if (event.data.type === "streamlit:render") {
+      var args = event.data.args;
+      if (args && args.num_trials) numTrials = args.num_trials;
+      if (phase === "init") showStart();
+      Streamlit.setFrameHeight(420);
+    }
+  });
+
+  Streamlit.setComponentReady();
+  Streamlit.setFrameHeight(420);
+})();
+</script>
+</body>
+</html>
