@@ -119,3 +119,27 @@ def get_flanker_trials(session_id: int) -> list[dict]:
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def delete_session(session_id: int) -> None:
+    conn = _conn()
+    conn.execute("DELETE FROM pvt_trials WHERE session_id = ?", (session_id,))
+    conn.execute("DELETE FROM flanker_trials WHERE session_id = ?", (session_id,))
+    conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+    conn.commit()
+    conn.close()
+
+
+def delete_all_sessions(task_type: str) -> None:
+    conn = _conn()
+    cur = conn.cursor()
+    ids = [r[0] for r in cur.execute(
+        "SELECT id FROM sessions WHERE task_type = ?", (task_type,)
+    ).fetchall()]
+    if ids:
+        placeholders = ",".join("?" * len(ids))
+        cur.execute(f"DELETE FROM pvt_trials WHERE session_id IN ({placeholders})", ids)
+        cur.execute(f"DELETE FROM flanker_trials WHERE session_id IN ({placeholders})", ids)
+        cur.execute(f"DELETE FROM sessions WHERE task_type = ?", (task_type,))
+    conn.commit()
+    conn.close()
