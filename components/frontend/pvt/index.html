@@ -49,11 +49,20 @@
     font-size: 14px;
     color: #555;
   }
+  .timer {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    font-size: 14px;
+    color: #555;
+    font-family: 'Courier New', monospace;
+  }
   .complete-title { font-size: 36px; color: #4b9dff; font-weight: bold; }
 </style>
 </head>
 <body tabindex="0">
 
+<div id="timer" class="timer"></div>
 <div id="progress" class="progress"></div>
 <div id="main"></div>
 <div id="sub" class="label"></div>
@@ -71,18 +80,42 @@
     setComponentValue(v) { postMsg("streamlit:setComponentValue", {value: v}); },
   };
 
-  let numTrials = 10;
+  let durationMs = 180000;
   let trials = [];
   let trialIdx = 0;
   let phase = "init";
   let isiTimer = null;
   let animFrame = null;
+  let timerFrame = null;
   let counterStart = 0;
   let currentISI = 0;
+  let sessionStart = 0;
 
   const main = document.getElementById("main");
   const sub = document.getElementById("sub");
   const progress = document.getElementById("progress");
+  const timerEl = document.getElementById("timer");
+
+  function formatRemaining(ms) {
+    var sec = Math.max(0, Math.ceil(ms / 1000));
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return m + ":" + String(s).padStart(2, "0");
+  }
+
+  function updateTimer() {
+    if (phase === "complete") return;
+    var elapsed = performance.now() - sessionStart;
+    var remaining = durationMs - elapsed;
+    timerEl.textContent = "残り " + formatRemaining(remaining);
+    if (remaining > 0) {
+      timerFrame = requestAnimationFrame(updateTimer);
+    }
+  }
+
+  function isTimeUp() {
+    return (performance.now() - sessionStart) >= durationMs;
+  }
 
   function showStart() {
     phase = "init";
@@ -90,13 +123,15 @@
     sub.textContent = "スペースキーで反応します";
     document.getElementById("start-btn").addEventListener("click", function() {
       document.body.focus();
+      sessionStart = performance.now();
+      updateTimer();
       nextTrial();
     });
   }
 
   function nextTrial() {
-    if (trialIdx >= numTrials) { complete(); return; }
-    progress.textContent = (trialIdx + 1) + " / " + numTrials;
+    if (isTimeUp()) { complete(); return; }
+    progress.textContent = "試行 " + (trialIdx + 1);
     phase = "fixation";
     main.innerHTML = '<div class="fixation">+</div>';
     sub.textContent = "刺激を待ってください\u2026";
@@ -156,6 +191,8 @@
 
   function complete() {
     phase = "complete";
+    cancelAnimationFrame(timerFrame);
+    timerEl.textContent = "残り 0:00";
     main.innerHTML = '<div class="complete-title">\u30c6\u30b9\u30c8\u5b8c\u4e86</div>';
     sub.textContent = "\u7d50\u679c\u3092\u51e6\u7406\u4e2d\u2026";
     Streamlit.setComponentValue(trials);
@@ -168,7 +205,7 @@
   window.addEventListener("message", function(event) {
     if (event.data.type === "streamlit:render") {
       var args = event.data.args;
-      if (args && args.num_trials) numTrials = args.num_trials;
+      if (args && args.duration_ms) durationMs = args.duration_ms;
       if (phase === "init") showStart();
       Streamlit.setFrameHeight(420);
     }

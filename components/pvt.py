@@ -7,5 +7,5 @@ _component_func = components.declare_component(
 )
 
 
-def pvt_component(num_trials: int = 10, key: str | None = None):
-    return _component_func(num_trials=num_trials, key=key, default=None)
+def pvt_component(duration_sec: int = 180, key: str | None = None):
+    return _component_func(duration_ms=duration_sec * 1000, key=key, default=None)
