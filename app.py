@@ -28,7 +28,7 @@ if _running:
         unsafe_allow_html=True,
     )
 
-page = st.sidebar.radio("", ["\U0001f3e0 \u30db\u30fc\u30e0", "\u23f1 PVT", "\U0001f3af Flanker Task", "\U0001f4ca \u7d50\u679c\u5c65\u6b74"])
+page = st.sidebar.radio("\u30da\u30fc\u30b8\u9078\u629e", ["\U0001f3e0 \u30db\u30fc\u30e0", "\u23f1 PVT", "\U0001f3af Flanker Task", "\U0001f4ca \u7d50\u679c\u5c65\u6b74"], label_visibility="collapsed")
 
 
 # ===== Home =====
