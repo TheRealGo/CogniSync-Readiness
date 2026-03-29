@@ -12,3 +12,7 @@ The primary goal of this project is to help users synchronize their subjective "
 - **Self-Calibration**: Compare subjective self-assessments with objective metrics to eliminate cognitive bias and "mental illusions" caused by fatigue or sleep deprivation.
 
 Ideal for anyone requiring high-level mental clarity, **CogniSync-Readiness** serves as a digital "guardrail" to ensure you only perform when your brain is truly ready.
+
+## Usage
+
+See [USAGE.md](USAGE.md) for setup instructions, how to run each task, and how to interpret results.
