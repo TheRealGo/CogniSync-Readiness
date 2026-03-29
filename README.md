@@ -1,4 +1,5 @@
 # CogniSync-Readiness
+<img width="1137" height="850" alt="CogniSync-Readiness" src="https://github.com/user-attachments/assets/c1c3b611-1df4-435b-b82b-8bf831737ec4" />
 
 [English](README.md) | [日本語](README.jp.md)
 
