@@ -8,6 +8,8 @@ from plotly.subplots import make_subplots
 from components.flanker import flanker_component
 from components.pvt import pvt_component
 from db import (
+    delete_all_sessions,
+    delete_session,
     get_flanker_trials,
     get_pvt_trials,
     get_sessions,
@@ -115,7 +117,7 @@ elif page == "\u23f1 PVT":
                 xaxis_title="\u8a66\u884c", yaxis_title="RT (ms)",
                 height=350, margin=dict(t=20, b=40),
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.warning("\u6709\u52b9\u306a\u8a66\u884c\u304c\u3042\u308a\u307e\u305b\u3093\u3002")
 
@@ -193,7 +195,7 @@ elif page == "\U0001f3af Flanker Task":
             xaxis_title="\u8a66\u884c", yaxis_title="RT (ms)",
             height=350, margin=dict(t=20, b=40),
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         st.caption("\U0001f535 \u4e00\u81f4\u8a66\u884c\u3000\U0001f7e0 \u4e0d\u4e00\u81f4\u8a66\u884c")
 
         if st.button("\u65b0\u3057\u3044\u30c6\u30b9\u30c8", key="fl_new"):
@@ -238,7 +240,7 @@ elif page == "\U0001f4ca \u7d50\u679c\u5c65\u6b74":
                 fig.update_layout(height=300, margin=dict(t=20, b=40))
                 fig.update_yaxes(title_text="RT (ms)", secondary_y=False)
                 fig.update_yaxes(title_text="\u4e3b\u89b3\u30b9\u30b3\u30a2", range=[0, 11], secondary_y=True)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
             st.markdown("---")
             for s in sessions:
@@ -256,6 +258,23 @@ elif page == "\U0001f4ca \u7d50\u679c\u5c65\u6b74":
                     c1.metric("Mean RT", f"{mean_rt:.0f} ms")
                     c2.metric("Minor Lapse", str(minor))
                     c3.metric("Major Lapse", str(major))
+                    if st.button("\u524a\u9664", key=f"del_pvt_{s['id']}", type="secondary"):
+                        delete_session(s["id"])
+                        st.rerun()
+
+            st.markdown("---")
+            if st.button("\u5168\u3066\u306ePVT\u8a18\u9332\u3092\u524a\u9664", key="del_all_pvt", type="secondary"):
+                st.session_state.confirm_del_pvt = True
+            if st.session_state.get("confirm_del_pvt"):
+                st.warning("\u672c\u5f53\u306b\u5168\u3066\u306ePVT\u8a18\u9332\u3092\u524a\u9664\u3057\u307e\u3059\u304b\uff1f")
+                c_yes, c_no = st.columns(2)
+                if c_yes.button("\u306f\u3044\u3001\u524a\u9664\u3059\u308b", key="confirm_yes_pvt", type="primary"):
+                    delete_all_sessions("pvt")
+                    st.session_state.confirm_del_pvt = False
+                    st.rerun()
+                if c_no.button("\u30ad\u30e3\u30f3\u30bb\u30eb", key="confirm_no_pvt"):
+                    st.session_state.confirm_del_pvt = False
+                    st.rerun()
 
     # --- Flanker history ---
     with tab_flanker:
@@ -292,7 +311,7 @@ elif page == "\U0001f4ca \u7d50\u679c\u5c65\u6b74":
                 fig.update_layout(height=300, margin=dict(t=20, b=40))
                 fig.update_yaxes(title_text="\u5e72\u6e09\u52b9\u679c (ms)", secondary_y=False)
                 fig.update_yaxes(title_text="\u4e3b\u89b3\u30b9\u30b3\u30a2", range=[0, 11], secondary_y=True)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
             st.markdown("---")
             for s in sessions:
@@ -309,3 +328,20 @@ elif page == "\U0001f4ca \u7d50\u679c\u5c65\u6b74":
                     c1.metric("\u6b63\u7b54\u7387", f"{acc:.1f}%")
                     c2.metric("\u5e72\u6e09\u52b9\u679c", f"{intf:.0f} ms")
                     c3.metric("\u4e00\u81f4 \u5e73\u5747RT", f"{statistics.mean(cong):.0f} ms" if cong else "N/A")
+                    if st.button("\u524a\u9664", key=f"del_fl_{s['id']}", type="secondary"):
+                        delete_session(s["id"])
+                        st.rerun()
+
+            st.markdown("---")
+            if st.button("\u5168\u3066\u306eFlanker\u8a18\u9332\u3092\u524a\u9664", key="del_all_fl", type="secondary"):
+                st.session_state.confirm_del_flanker = True
+            if st.session_state.get("confirm_del_flanker"):
+                st.warning("\u672c\u5f53\u306b\u5168\u3066\u306eFlanker\u8a18\u9332\u3092\u524a\u9664\u3057\u307e\u3059\u304b\uff1f")
+                c_yes, c_no = st.columns(2)
+                if c_yes.button("\u306f\u3044\u3001\u524a\u9664\u3059\u308b", key="confirm_yes_fl", type="primary"):
+                    delete_all_sessions("flanker")
+                    st.session_state.confirm_del_flanker = False
+                    st.rerun()
+                if c_no.button("\u30ad\u30e3\u30f3\u30bb\u30eb", key="confirm_no_fl"):
+                    st.session_state.confirm_del_flanker = False
+                    st.rerun()
