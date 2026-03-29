@@ -12,25 +12,33 @@ Users provide a subjective condition score (1-10) before each session, which is 
 
 ## Development
 
-**Package manager**: uv (check `pyproject.toml` — no `[tool.poetry]` section)
+**Stack**: Next.js 15 + TypeScript + Tailwind CSS 4 + better-sqlite3 + Recharts
+
+**Package manager**: pnpm
 
 ```bash
-uv sync                    # Install dependencies
-uv run streamlit run app.py  # Launch the Streamlit app
-uv run pytest              # Run tests (when added)
-uv add <package>           # Add a dependency
+pnpm install              # Install dependencies
+pnpm dev                  # Launch development server (http://localhost:3000)
+pnpm build                # Production build
+pnpm start                # Start production server
 ```
-
-**Python version**: 3.12 (pinned in `.python-version`)
 
 ## Architecture
 
-- `app.py` — Streamlit app entry point (sidebar navigation: Home / PVT / Flanker / Results)
-- `db.py` — SQLite database layer (`cognisync.db` at project root)
-- `components/pvt.py`, `components/flanker.py` — Streamlit custom component wrappers
-- `components/frontend/pvt/index.html`, `components/frontend/flanker/index.html` — Client-side JS for timing-critical task execution (communicates with Streamlit via `postMessage` protocol)
+- `src/app/layout.tsx` — Root layout with sidebar navigation
+- `src/app/page.tsx` — Home page
+- `src/app/pvt/page.tsx` — PVT task page (setup → running → result)
+- `src/app/flanker/page.tsx` — Flanker task page (setup → running → result)
+- `src/app/results/page.tsx` — Results history with trend charts
+- `src/app/api/` — Next.js API routes for CRUD operations
+- `src/components/pvt-task.tsx` — PVT client-side timing component (`performance.now()`)
+- `src/components/flanker-task.tsx` — Flanker client-side timing component
+- `src/components/pvt-results.tsx`, `flanker-results.tsx` — Single-session result displays
+- `src/lib/db.ts` — SQLite database layer (better-sqlite3, `cognisync.db` at project root)
+- `src/lib/types.ts` — TypeScript type definitions
+- `src/lib/constants.ts` — Task thresholds and defaults
 
-Reaction time measurement runs entirely in the browser (client-side JS with `performance.now()`) to avoid server roundtrip latency. Results are sent back to Python via the Streamlit custom component protocol and persisted to SQLite.
+Reaction time measurement runs entirely in the browser (React components with `performance.now()`) to avoid server roundtrip latency. Results are sent to API routes and persisted to SQLite.
 
 ## Key Design Constraints (from Spec.md)
 

@@ -1,3 +1,4 @@
+node_modules/
+.next/
 .direnv/
-__pycache__/
 cognisync.db
