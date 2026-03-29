@@ -65,16 +65,19 @@ elif page == "\u23f1 PVT":
             "\u30ab\u30a6\u30f3\u30bf\u30fc\u304c\u8868\u793a\u3055\u308c\u308b\u524d\u306b\u62bc\u3059\u3068\u30d5\u30a9\u30eb\u30b9\u30b9\u30bf\u30fc\u30c8 (FS) \u306b\u306a\u308a\u307e\u3059\u3002"
         )
         score = st.slider("\u73fe\u5728\u306e\u4e3b\u89b3\u7684\u30b3\u30f3\u30c7\u30a3\u30b7\u30e7\u30f3", 1, 10, 5, help="1=\u975e\u5e38\u306b\u60aa\u3044, 10=\u975e\u5e38\u306b\u826f\u3044")
-        num = st.number_input("\u8a66\u884c\u56de\u6570", min_value=5, max_value=30, value=10)
+        duration_min = st.number_input(
+            "\u30c6\u30b9\u30c8\u6642\u9593\uff08\u5206\uff09", min_value=1, max_value=10, value=3,
+            help="\u5b66\u8853\u7684\u63a8\u5968\u5024: 3\u5206 (Basner & Dinges, 2011)",
+        )
         if st.button("\u30c6\u30b9\u30c8\u958b\u59cb", type="primary"):
             st.session_state.pvt_score = score
-            st.session_state.pvt_num = num
+            st.session_state.pvt_duration = duration_min * 60
             st.session_state.pvt_phase = "running"
             st.rerun()
 
     elif st.session_state.pvt_phase == "running":
         st.info("\u30c6\u30b9\u30c8\u4e2d\u306f\u4ed6\u306e\u64cd\u4f5c\u3092\u3057\u306a\u3044\u3067\u304f\u3060\u3055\u3044\u3002")
-        result = pvt_component(num_trials=st.session_state.pvt_num, key="pvt_task")
+        result = pvt_component(duration_sec=st.session_state.pvt_duration, key="pvt_task")
         if result is not None:
             save_pvt_session(st.session_state.pvt_score, result)
             st.session_state.pvt_result = result
